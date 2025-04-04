@@ -42,6 +42,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 if ($cliente->guardarCliente($nombre, $paterno, $materno, $telefono, $fecha_envio, $response, $source_phone)) {
                     $telefonosProcesados[] = $telefono;
 
+                    $res_template = $cliente->enviar_plantilla($telefono, $source_phone);
+
                     // Registrar los datos en el log
                     $logData .= "Nombre: $nombre, Paterno: $paterno, Materno: $materno, Teléfono: $telefono, Source phone: $source_phone, Plantilla: $template\n";
                 }

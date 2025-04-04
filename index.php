@@ -27,15 +27,8 @@
                 <div class="form-group">
                     <label for="">Plantilla</label>
                     <select name="template" id="template" class="form-select">
-                        <option value="0">Seleccione...</option>
-                        <option value="1" >Pago pendiente del día de ayer</option>
-                        <option value="2">Pago a préstamo del día de hoy</option>
-                        <option value="3">Apoya con su comprobante cuando quede el pago</option>
-
-                        <option value="4">Apoya con su comprobante y evitar la multa por mora</option>
-                        <option value="5">Apoya con su comprobante y evitar la multa por atrasos en pagos</option>
-                        <option value="6">Su cuenta está en mora, se pasará a despacho legal</option>
-                        <option value="7">Si gusta renovar su préstamo con gusto lo atenderemos</option>
+                        <!-- <option value="0">Seleccione...</option> -->
+                        <option value="1" >Promocion Imagen 1</option>
                     </select>
                 </div>
             </div>
@@ -44,11 +37,11 @@
                 <div class="form-group">
                     <label for="">Número</label>
                     <select name="source_phone" id="source_phone" class="form-select">
-                        <option value="8183397869">8183397869</option>
+                        <!-- <option value="8183397869">8183397869</option> -->
                         <option value="8116031152">8116031152</option>
-                        <option value="8117960227">8117960227</option>
-                        <option value="8113134705">8113134705</option>
-                        <option value="8125387659">8125387659</option>
+                        <!-- <option value="8117960227">8117960227</option> -->
+                        <!-- <option value="8113134705">8113134705</option> -->
+                        <!-- <option value="8125387659">8125387659</option> -->
                     </select>
                 </div>
             </div>

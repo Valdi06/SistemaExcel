@@ -1,6 +1,6 @@
 <?php
 require_once 'config.php'; // Incluir conexión
-
+$baseurl = "./logs/";
 class Cliente {
     private $conn;
     private $telefonosProcesados = []; // Para evitar duplicados en el mismo archivo
@@ -152,6 +152,347 @@ class Cliente {
         }
     }
        
+    public function enviar_plantilla($destination_phone, $source_phone){
+
+        $destination_phone = ( strpos($destination_phone, '521') !== false) ? $destination_phone : "521".$destination_phone;
+
+        $payload = [
+            "messaging_product" => "whatsapp",
+            "recipient_type" => "individual",
+            "to" => $destination_phone,
+            "type" => "template",
+            "template" => [
+                "name" => "promoimg1",
+                "language" => [
+                    "code" => "Es_MX"
+                ],
+                "components" => [
+                    [
+                        "type" => "header",
+                        "parameters" => [
+                            [
+                                "type" => "image",
+                                "image" => [
+                                    "link" => "https://yupii.com.mx:3081/wa3a.jpg"
+                                ]
+                            ]
+                        ]
+                    ],
+                    [
+                        "type" => "body",
+                        "parameters" => [
+                            [
+                                "type" => "text",
+                                "text" => "Papeleria 123"
+                            ]
+                        ]
+                    ],
+                    [
+                        "type" => "button",
+                        "sub_type" => "quick_reply",
+                        "index" => "0",
+                        "parameters" => [
+                            [
+                                "type" => "payload",
+                                "payload" => "Mas Informacion"
+                            ]
+                        ]
+                    ]
+                ]
+            ]
+        ];
+    
+        $ch = curl_init("https://partner.gupshup.io/partner/app/52761ce2-fd88-446c-9a5e-fcfe9bf41c21/v3/message");
+    
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'accept: application/json',
+            'Authorization: sk_5a3b9c4fd7164575af0bd685dc6b2a30',
+            'Content-Type: application/json'
+        ]);
+        
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    
+        $response = curl_exec($ch);
+        
+        // if (curl_errno($ch)) {
+        //     echo 'Curl error: ' . curl_error($ch);
+        // }
+
+        if ($f = fopen($GLOBALS["baseurl"] . "enviar_plantilla" . date('Ymd') . ".txt", "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " payload=" . json_encode($payload) . ", response=" . $response . ", destination_phone=" . $destination_phone . "\r\n");
+            fclose($f);
+        }
+    
+        curl_close($ch);
+        $json_res = json_decode($response);
+        $messageId = ( !empty($json_res->messageId) )?$json_res->messageId:"";
+
+        $filename = "wa3a.jpg";
+        $user_id = "1";
+        $user_name = "IA";
+        $message = "Hasta $100,000 para 🚀 crecer tu negocio  🏪 [Papeleria 123]!
+
+                    Con el Plan Nacional; Pideaky apoya crecimiento de pequeños negocios con préstamos desde 10,000 hasta 100,000 pesos. 
+                    Tu eliges el plazo desde 8 a 42 semanas.
+
+                    No pedimos anticipos , pide una cita y un asesor te visitará para informarte.";
+
+        $array_message = array("destination_phone"=>$destination_phone, 
+                                "message"=>$message, 
+                                "response"=>$response, 
+                                "source_phone"=>$source_phone, 
+                                'user_id'=>$user_id, 
+                                'user_name'=>$user_name, 
+                                'messageId'=>$messageId,
+                                'filename'=>$filename,
+                                'file_url'=>"https://yupii.com.mx:3081/wa3a.jpg",
+                                'file_type'=>'image/jpeg'
+                            );
+
+        $save_message = $this->save_templateFileSent(json_encode($array_message));
+        $json_save = json_decode($save_message);
+
+        $messageinsert_id = ($json_save->status == "ok")?$json_save->id:0;
+
+        if( !empty($messageinsert_id)){
+            // save last message
+            $save_lastmessage = $this->save_lastmessage($destination_phone, $source_phone, $messageinsert_id, "sent", $destination_phone, "file");
+        }
+    
+        return $response;
+    }
+
+    public function save_templateFileSent($data) {
+        $json = json_decode($data);
+    
+        $this->conn->query("SET NAMES utf8mb4;");
+    
+        $query = "INSERT INTO customerfiles(
+            filename, file_url, file_type, fileorigin, id_wa, caption, phone_wa, source_phone, user_id, user_name
+        ) VALUES (?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?)";
+    
+        $stmt = $this->conn->prepare($query);
+    
+        if (!$stmt) {
+            return json_encode(array(
+                "status" => "false",
+                "msj" => $this->conn->error,
+                "response" => $json->message
+            ));
+        }
+    
+        $stmt->bind_param(
+            "sssssssss",
+            $json->filename,
+            $json->file_url,
+            $json->file_type,
+            $json->messageId,
+            $json->message,
+            $json->destination_phone,
+            $json->source_phone,
+            $json->user_id,
+            $json->user_name
+        );
+    
+        $res = $stmt->execute();
+    
+        // Log
+        if ($f = fopen($GLOBALS["baseurl"] . "save_messagesent" . date('Ymd') . ".txt", "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " R=" . json_encode($res) . ", E=" . $stmt->error . ", Q=" . $query . "\r\n");
+            fclose($f);
+        }
+    
+        if (!$res) {
+            return json_encode(array(
+                "status" => "false",
+                "msj" => $stmt->error,
+                "response" => $json->message
+            ));
+        } else {
+            return json_encode(array(
+                "status" => "ok",
+                "id" => $this->conn->insert_id,
+                "response" => $json->message
+            ));
+        }
+    }
+    
+    public function save_lastmessage($phone_wa, $source_phone, $message_id, $origin, $profile_name, $type){
+
+        $get_contactphone = $this->get_contactphone($phone_wa, $source_phone);
+        $json_contactphone = json_decode($get_contactphone);
+
+        $count = 0;
+        // update last message
+        if($json_contactphone->num >= 1){
+            $contactphone_id = $json_contactphone->id;
+            
+            $upd_lastmessage = $this->update_lastcontactmessage($phone_wa, $source_phone, $message_id, $origin, $profile_name, $type, $count, $contactphone_id);
+        
+            $json_res = json_decode($upd_lastmessage);
+            
+            $msj = ($json_res->status == "ok")? "ok" : $json_res->msj;
+
+            $action = "update";
+        }
+        else{
+            // insert last message
+            
+            $insert_lastmessage = $this->insert_lastmessage($phone_wa, $source_phone, $message_id, $origin, $profile_name, $type, $count, "");
+            
+            $json_res = json_decode($insert_lastmessage);
+            $contactphone_id = ($json_res->status == "ok")? $json_res->id : 0;
+            $msj = ($json_res->status == "ok")? "ok" : $json_res->msj;
+
+            $action = "insert";
+        }
+
+        if( !empty($message_id) && !empty($contactphone_id) ){
+            
+            $upd_phone_id = $this->upd_phoneid($contactphone_id, $message_id, $type);
+
+        }
+
+        if ($f=fopen($GLOBALS["baseurl"]."save_lastmessage" . date('Ymd') . ".txt", "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " phone=" . $phone_wa . ", source_phone=" . $source_phone . ", message_id=" . $message_id . ", origin=" . $origin . ", profile_name=" . $profile_name . ", type=" . $type . ", contactphone_id=" . $contactphone_id . ", msj=" . $msj . ", action=" . $action . "\r\n");
+            fclose($f);
+        }
+
+        return json_encode(array("phone_id"=>$contactphone_id, "status"=>$msj));
+
+    }
+
+    public function get_contactphone($phone_wa, $source_phone) {
+        $query = "SELECT
+                    id,
+                    `timestamp`,
+                    phone,
+                    profile_name,
+                    message_id,
+                    origin,
+                    source_phone,
+                    message_type,
+                    count 
+                  FROM phones
+                  WHERE phone = ? AND source_phone = ?
+                  ORDER BY id DESC LIMIT 1";
+    
+        $stmt = $this->conn->prepare($query);
+    
+        if (!$stmt) {
+            return json_encode(array(
+                "num" => 0,
+                "error" => $this->conn->error
+            ));
+        }
+    
+        $stmt->bind_param("ss", $phone_wa, $source_phone);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        $num = $result->num_rows;
+        $row = $result->fetch_array(MYSQLI_ASSOC);
+    
+        return json_encode(array(
+            "num" => $num,
+            "timestamp" => $row["timestamp"] ?? "",
+            "id" => $row["id"] ?? "",
+            "count" => $row["count"] ?? ""
+        ));
+    }
+    
+
+    public function update_lastcontactmessage($phone_wa, $source_phone, $message_id, $origin, $profile_name, $type, $count, $contactphone_id) {
+        $this->conn->query("SET NAMES utf8mb4;");
+    
+        $query = "UPDATE phones SET 
+                        message_id = ?, 
+                        origin = ?, 
+                        message_type = ?, 
+                        count = ?, 
+                        lasttimestamp = CURRENT_TIMESTAMP 
+                  WHERE id = ?";
+    
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("issii", $message_id, $origin, $type, $count, $contactphone_id);
+    
+        $res = $stmt->execute();
+    
+        // Registro en archivo de log
+        if ($f = fopen($GLOBALS["baseurl"] . "update_lastcontactmessage" . date('Ymd') . ".txt", "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " R=" . ($res ? 'true' : 'false') . ", E=" . $stmt->error . ", Q=" . $query . "\r\n");
+            fclose($f);
+        }
+    
+        if (!$res) {
+            return json_encode(array("status" => "false", "msj" => $stmt->error));
+        } else {
+            return json_encode(array("status" => "ok", "id" => $message_id));
+        }
+    }
+    
+    public function insert_lastmessage($phone_wa, $source_phone, $message_id, $origin, $profile_name, $type, $count, $timestamp) {
+        $this->conn->query("SET NAMES utf8mb4;");
+    
+        $useCurrentTimestamp = empty($timestamp);
+        $query = $useCurrentTimestamp
+            ? "INSERT INTO phones(phone, profile_name, message_id, origin, source_phone, message_type, count, lasttimestamp)
+               VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)"
+            : "INSERT INTO phones(phone, profile_name, message_id, origin, source_phone, message_type, count, lasttimestamp)
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
+    
+        $stmt = $this->conn->prepare($query);
+    
+        if ($useCurrentTimestamp) {
+            $stmt->bind_param("ssisssi", $phone_wa, $profile_name, $message_id, $origin, $source_phone, $type, $count);
+        } else {
+            $stmt->bind_param("ssisssis", $phone_wa, $profile_name, $message_id, $origin, $source_phone, $type, $count, $timestamp);
+        }
+    
+        $res = $stmt->execute();
+    
+        // Registro en log
+        if ($f = fopen($GLOBALS["baseurl"] . "insert_lastmessage" . date('Ymd') . ".txt", "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " R=" . ($res ? 'true' : 'false') . ", E=" . $stmt->error . ", Q=" . $query . "\r\n");
+            fclose($f);
+        }
+    
+        if (!$res) {
+            return json_encode(array("status" => "false", "msj" => $stmt->error));
+        } else {
+            return json_encode(array("status" => "ok", "id" => $this->conn->insert_id));
+        }
+    }
+    
+    public function upd_phoneid($phone_id, $message_id, $type) {
+        $this->conn->query("SET NAMES utf8mb4;");
+    
+        if ($type === "text") {
+            $query = "UPDATE sent_messages SET phone_id = ? WHERE id = ?";
+        } else if ($type === "file") {
+            $query = "UPDATE customerfiles SET phone_id = ? WHERE id = ?";
+        } else {
+            return json_encode(array("status" => "false", "msj" => "Tipo inválido"));
+        }
+    
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("ii", $phone_id, $message_id);
+        $res = $stmt->execute();
+    
+        // Registro en log
+        if ($f = fopen($GLOBALS["baseurl"] . "upd_phoneid" . date('Ymd') . ".txt", "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " R=" . ($res ? 'true' : 'false') . ", E=" . $stmt->error . ", Q=" . $query . ", T=" . $type . "\r\n");
+            fclose($f);
+        }
+    
+        if (!$res) {
+            return json_encode(array("status" => "false", "msj" => $stmt->error));
+        } else {
+            return json_encode(array("status" => "ok", "id" => $message_id));
+        }
+    }
+    
     
 }
 ?>
