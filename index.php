@@ -50,6 +50,7 @@
 
 
         <button type="submit" class="btn btn-primary">Importar Excel</button>
+        <a href="./template/plantilla.xlsx" download class="btn btn-primary" style="float: right;">Descargar Plantilla</a>
     </form>
 
     <hr>
