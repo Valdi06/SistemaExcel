@@ -80,5 +80,5 @@ if (!empty($telefonosProcesados)) {
 }
 
 // Devolver los datos actualizados después de la importación con mensajes, fecha e iconos
-echo json_encode($cliente->obtenerClientesConMensajes());
+echo json_encode($cliente->obtenerClientesConMensajes($batch_id));
 ?>

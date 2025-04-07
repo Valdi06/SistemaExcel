@@ -70,7 +70,7 @@ class Cliente {
         return $clientes;
     }
 
-    public function obtenerClientesConMensajes() {
+    public function obtenerClientesConMensajes($batch_id) {
         $query = "
             SELECT
                 c.id,
@@ -82,6 +82,7 @@ class Cliente {
                 c.fecha_envio,
                 c.response,
                 c.source_phone,
+                c.batch_id,
                 p.origin,
                 COALESCE(
                     (SELECT message_received FROM messageschb WHERE messageschb.id = p.message_id AND p.origin = 'received' AND p.message_type = 'text'),
@@ -118,10 +119,13 @@ class Cliente {
             LEFT JOIN phones p ON c.telefono = p.phone AND c.source_phone = p.source_phone
             LEFT JOIN sent_messages sm ON sm.id = p.message_id AND p.origin = 'sent' AND p.message_type = 'text'
             LEFT JOIN customerfiles cf ON cf.id = p.message_id AND p.origin = 'sent' AND p.message_type = 'file'
+            WHERE
+                c.batch_id = ?
             ORDER BY p.lasttimestamp DESC
         ";
     
         $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $batch_id);
         $stmt->execute();
         $result = $stmt->get_result();
     
