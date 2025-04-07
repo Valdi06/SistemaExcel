@@ -8,7 +8,6 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
     <link rel="stylesheet" href="styles.css">
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="script.js"></script>
 </head>
 <body class="container mt-4">
     <h2 class="mb-3">Subir archivo Excel</h2>
@@ -50,11 +49,14 @@
 
 
         <button type="submit" class="btn btn-primary">Importar Excel</button>
-        <a href="./template/plantilla.xlsx" download class="btn btn-primary" style="float: right;">Descargar Plantilla</a>
+        <a href="./template/plantilla.xlsx" download class="btn btn-warning" style="float: right;">Descargar Plantilla</a>
     </form>
 
     <hr>
 
+    <div class="text-center mt-4">
+        <a href="batches.php" target="_blank" class="btn btn-primary">Ver Lista de Batches</a>
+    </div>
     <!-- Tabs para "Todos", "Finalizado" y "No Enviado" -->
     <ul class="nav nav-tabs" id="resultTabs">
         <li class="nav-item">
@@ -70,17 +72,45 @@
 
     <div class="tab-content mt-3">
         <div class="tab-pane fade show active" id="todos">
-            <ul id="todosList" class="list-group"></ul>
+            <div class="lista-wrapper">
+                <ul id="todosList" class="list-group"></ul>
+            </div>
+            <div class="text-center mt-2">
+                <button type="button" id="btnTodosAccion" class="btn btn-primary">
+                    <i class="fa fa-spinner fa-pulse fa-lg fa-fw cargaS2" style="display:none"></i>
+                    <i class="fab fa-whatsapp iconoS2"></i>
+                    Enviar
+                </button>
+            </div>
         </div>
         <div class="tab-pane fade" id="finalizado">
-            <ul id="finalizadoList" class="list-group"></ul>
+            <div class="lista-wrapper">
+                <ul id="finalizadoList" class="list-group"></ul>
+            </div>
+            <div class="text-center mt-2">
+                <button type="button" id="btnFinalizadoAccion" class="btn btn-primary">
+                    <i class="fa fa-spinner fa-pulse fa-lg fa-fw cargaS2" style="display:none"></i>
+                    <i class="fab fa-whatsapp iconoS2"></i>
+                    Enviar
+                </button>
+            </div>
         </div>
         <div class="tab-pane fade" id="noenviado">
-            <ul id="noEnviadoList" class="list-group"></ul>
+            <div class="lista-wrapper">
+                <ul id="noEnviadoList" class="list-group"></ul>
+            </div>
+            <div class="text-center mt-2">
+                <button type="button" id="btnNoEnviadosAccion" class="btn btn-primary">
+                    <i class="fa fa-spinner fa-pulse fa-lg fa-fw cargaS2" style="display:none"></i>
+                    <i class="fab fa-whatsapp iconoS2"></i>
+                    Enviar
+                </button>
+            </div>
         </div>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
 </body>
 </html>
 

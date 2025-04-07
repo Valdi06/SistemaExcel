@@ -9,8 +9,27 @@ $logData = "Importación de datos - " . date("Y-m-d H:i:s") . "\n";
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
     if ($_FILES['excel_file']['error'] == 0) {
-        $filePath = $_FILES['excel_file']['tmp_name'];
-        $spreadsheet = IOFactory::load($filePath);
+
+        // Variables para archivo
+        $nombreOriginal = $_FILES['excel_file']['name'];
+        $timestamp = date('Ymd_His');
+        $nombreGuardado = $timestamp . '_' . $nombreOriginal;
+        $rutaDestino = "./batches/$nombreGuardado";
+
+        // Crear carpeta si no existe
+        if (!file_exists("./batches")) {
+            mkdir("./batches", 0777, true);
+        }
+
+        // Guardar el archivo subido
+        copy($_FILES['excel_file']['tmp_name'], $rutaDestino);
+
+        $res_savebatch = $cliente->save_batch($nombreOriginal, $nombreGuardado);
+        $json_batch = json_decode($res_savebatch);
+        $batch_id = ($json_batch->status == "ok")?$json_batch->id : 0;
+
+        // $filePath = $_FILES['excel_file']['tmp_name'];
+        $spreadsheet = IOFactory::load($rutaDestino);
         $worksheet = $spreadsheet->getActiveSheet();
 
         // Obtener el source_phone desde el formulario
@@ -27,25 +46,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
             }
 
             if (!empty($rowData[0])) {
-                $nombre = $rowData[0];
-                $paterno = $rowData[1];
-                $materno = $rowData[2];
-                $telefono = $rowData[3];
+                $telefono = $rowData[0];
+                $nombre   = $rowData[1];
+                $address  = $rowData[2];
+                $email    = $rowData[3];
+                $web      = $rowData[4];
 
                 if (in_array($telefono, $telefonosProcesados) || $cliente->telefonoEnviadoHoy($telefono)) {
                     continue;
                 }
 
                 $fecha_envio = date("Y-m-d H:i:s");
-                $response = rand(0, 1) ? "Enviado" : "No Enviado";
+                $response = "";
 
-                if ($cliente->guardarCliente($nombre, $paterno, $materno, $telefono, $fecha_envio, $response, $source_phone)) {
+                if ($cliente->guardarCliente($nombre, $address, $email, $web, $telefono, $response, $source_phone, $batch_id)) {
                     $telefonosProcesados[] = $telefono;
 
-                    $res_template = $cliente->enviar_plantilla($telefono, $source_phone);
+                    // $res_template = $cliente->enviar_plantilla($telefono, $source_phone);
 
                     // Registrar los datos en el log
-                    $logData .= "Nombre: $nombre, Paterno: $paterno, Materno: $materno, Teléfono: $telefono, Source phone: $source_phone, Plantilla: $template\n";
+                    $logData .= "Nombre: $nombre, address: $address, email: $email, web: $web, Teléfono: $telefono, Source phone: $source_phone, Plantilla: $template\n";
                 }
             }
         }

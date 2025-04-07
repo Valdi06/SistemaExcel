@@ -20,6 +20,8 @@ $(document).ready(function () {
             contentType: false,
             success: function (response) {
                 actualizarListas(response);
+
+                $("#uploadForm")[0].reset();
             }
         });
     });
@@ -36,7 +38,6 @@ function cargarDatos() {
     });
 }
 
-// Función para actualizar las listas en la interfaz
 function actualizarListas(response) {
     let data = JSON.parse(response);
     $("#todosList").empty();
@@ -44,26 +45,46 @@ function actualizarListas(response) {
     $("#noEnviadoList").empty();
 
     data.forEach(item => {
-        // console.log(item);
         let mensaje = item.ultimo_mensaje ? item.ultimo_mensaje : "Sin mensajes";
         let mensajeFecha = item.mensaje_fecha ? item.mensaje_fecha : "";
         let estadoIcono = obtenerIconoMensaje(item);
 
+        console.log(item);
+        // Validar si está dentro de los últimos 30 días
+        let esReciente = false;
+        if (item.lasttimestamp) {
+            let fechaMensaje = new Date(item.lasttimestamp);
+            let ahora = new Date();
+            let hace30Dias = new Date();
+            hace30Dias.setDate(ahora.getDate() - 30);
+            esReciente = fechaMensaje > hace30Dias;
+        }
+        
+
+        let fondoClase = esReciente ? "bg-warning-subtle" : "";
+        let checked = esReciente ? "" : "checked";
+
         let listItem = `
-            <li class="list-group-item d-flex justify-content-between align-items-center">
-                <div>
-                    <strong>${item.nombre} ${item.paterno} ${item.materno} (${item.telefono})</strong>
-                    <br><small><em>${mensaje}</em></small>
-                </div>
-                <div class="text-end">
-                    <small class="text-muted">${mensajeFecha}</small>
-                    <br>
-                    ${estadoIcono}
-                </div>
-            </li>`;
+                <li class="list-group-item d-flex align-items-center justify-content-between ${fondoClase}">
+                    <div class="d-flex align-items-start gap-2">
+                        <input class="form-check-input mt-1" type="checkbox" value="${item.telefono}" data-clienteid="${item.id}" data-nombre="${item.nombre}" ${checked}>
+                        <div>
+                            <strong>${item.nombre} (${item.telefono})</strong>
+                            <br>
+                            <small><em>${item.address}</em></small>
+                            <br>
+                            <small><em>${mensaje}</em></small>
+                        </div>
+                    </div>
+                    <div class="text-end">
+                        <small class="text-muted">${mensajeFecha}</small>
+                        <br>
+                        ${estadoIcono}
+                    </div>
+                </li>`;
 
         $("#todosList").append(listItem);
-        if (item.response === "Enviado") {
+        if (!esReciente) {
             $("#finalizadoList").append(listItem);
         } else {
             $("#noEnviadoList").append(listItem);
@@ -91,4 +112,95 @@ function obtenerIconoMensaje(item) {
     }
 
     return `<span class="status-icon">${icon}</span>`;
+}
+
+// Función genérica para mostrar seleccionados de una lista
+function send_template(listaId) {
+    $(`#${listaId} input[type="checkbox"]:checked`).each(function () {
+        let telefono = $(this).val();
+        let nombre = $(this).data("nombre");
+        let clienteid = $(this).data("clienteid");
+        let template = $("#template").val();
+        let source_phone = $("#source_phone").val();
+        
+        console.log(`📞 ${telefono} - 👤 ${nombre}`);
+
+        $.ajax({
+            url: "./send_template.php",
+            type: "POST",
+            dataType: 'json',
+            encode : true,
+            data:{'telefono':telefono,
+                'nombre':nombre, 
+                'template':template, 
+                'source_phone':source_phone,
+                'clienteid':clienteid
+            },
+            success: function(response){
+
+                console.log(response);
+                
+            },
+            error: function(xhr, status, error){
+                console.error("Error en AJAX:", xhr.responseText || error);
+            }
+        });
+
+    });
+}
+
+// Eventos para los botones
+$("#btnTodosAccion").click(() => {
+    console.log("✔️ Elementos seleccionados en TODOS:");
+    send_template("todosList");
+});
+
+$("#btnFinalizadoAccion").click(() => {
+    console.log("✔️ Elementos seleccionados en FINALIZADO:");
+    send_template("finalizadoList");
+});
+
+$("#btnNoEnviadosAccion").click(() => {
+    console.log("✔️ Elementos seleccionados en NO ENVIADO:");
+    send_template("noEnviadoList");
+});
+
+$(document).on('click', '.batch-item', function () {
+    let batchId = $(this).data('id');
+    console.log(`🔍 Cargando registros del batch ID: ${batchId}`);
+
+    $.ajax({
+        url: 'get_batch_details.php',
+        type: 'POST',
+        dataType: 'json',
+        data: { batch_id: batchId },
+        success: function (data) {
+            mostrarRegistrosDelBatch(data);
+        },
+        error: function (xhr) {
+            console.error("❌ Error al cargar los registros del batch:", xhr.responseText);
+        }
+    });
+});
+
+function mostrarRegistrosDelBatch(registros) {
+    let contenedor = $("#batchDetalles");
+    contenedor.empty();
+
+    if (registros.length === 0) {
+        contenedor.html("<p>No se encontraron registros.</p>");
+        return;
+    }
+
+    registros.forEach(reg => {
+        contenedor.append(`
+            <div class="card mb-2 p-2">
+                <strong>${reg.nombre} ${reg.paterno} ${reg.materno}</strong><br>
+                📞 ${reg.telefono}<br>
+                📧 ${reg.email} | 🌐 ${reg.web}<br>
+                🏠 ${reg.address}<br>
+                🕒 ${reg.fecha_envio}
+            </div>
+        `);
+    });
 }

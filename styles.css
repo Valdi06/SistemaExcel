@@ -58,3 +58,12 @@ body {
 .ctimes{
     color: #d63031;
 }
+
+.lista-wrapper {
+    max-height: 700px; /* Puedes ajustar la altura que prefieras */
+    overflow-y: auto;
+    border: 1px solid #ccc; /* Opcional, para delimitar visualmente */
+    border-radius: 5px;
+    padding: 5px;
+    background: #fff; /* Por si quieres un fondo fijo */
+}

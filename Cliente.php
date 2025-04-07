@@ -22,7 +22,7 @@ class Cliente {
     }
 
     // Guarda un cliente en la base de datos evitando duplicados dentro del mismo archivo Excel
-    public function guardarCliente($nombre, $paterno, $materno, $telefono, $fecha_envio, $response, $source_phone) {
+    public function guardarCliente($nombre, $address, $email, $web, $telefono, $response, $source_phone, $batch_id) {
         // Evitar duplicados en el mismo archivo Excel
         if (in_array($telefono, $this->telefonosProcesados)) {
             return false; // Ya se procesó en este archivo, no lo guardamos ni mostramos
@@ -34,10 +34,10 @@ class Cliente {
         }
 
         // Insertar el cliente
-        $query = "INSERT INTO clientes (nombre, paterno, materno, telefono, fecha_envio, response, source_phone) 
-                  VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $query = "INSERT INTO clientes (nombre, `address`, email, web, telefono, response, source_phone, batch_id) 
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)";
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param("sssssss", $nombre, $paterno, $materno, $telefono, $fecha_envio, $response, $source_phone);
+        $stmt->bind_param("sssssssi", $nombre, $address, $email, $web, $telefono, $response, $source_phone, $batch_id);
         $resultado = $stmt->execute();
 
         if ($resultado) {
@@ -48,7 +48,7 @@ class Cliente {
     }
 
     public function obtenerClientes($filtro = "todos") {
-        $query = "SELECT id, nombre, paterno, materno, telefono, fecha_envio, response FROM clientes";
+        $query = "SELECT id, nombre, `address`, email, web, telefono, fecha_envio, response FROM clientes";
     
         if ($filtro === "enviados") {
             $query .= " WHERE response = 'Enviado'";
@@ -75,8 +75,9 @@ class Cliente {
             SELECT
                 c.id,
                 c.nombre,
-                c.paterno,
-                c.materno,
+                c.address,
+                c.email,
+                c.web,
                 c.telefono,
                 c.fecha_envio,
                 c.response,
@@ -127,6 +128,7 @@ class Cliente {
         $clientes = [];
         while ($row = $result->fetch_assoc()) {
             // Formatear la fecha del mensaje
+            $row['lasttimestamp'] = $row['mensaje_fecha'];
             $row['mensaje_fecha'] = $this->formatearFecha($row['mensaje_fecha']);
             $clientes[] = $row;
         }
@@ -214,7 +216,8 @@ class Cliente {
         curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($payload));
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     
-        $response = curl_exec($ch);
+        // Envio de mensaje
+        // $response = curl_exec($ch);
         
         // if (curl_errno($ch)) {
         //     echo 'Curl error: ' . curl_error($ch);
@@ -232,12 +235,7 @@ class Cliente {
         $filename = "wa3a.jpg";
         $user_id = "1";
         $user_name = "IA";
-        $message = "Hasta $100,000 para 🚀 crecer tu negocio  🏪 [Papeleria 123]!
-
-                    Con el Plan Nacional; Pideaky apoya crecimiento de pequeños negocios con préstamos desde 10,000 hasta 100,000 pesos. 
-                    Tu eliges el plazo desde 8 a 42 semanas.
-
-                    No pedimos anticipos , pide una cita y un asesor te visitará para informarte.";
+        $message = "Hasta $100,000 para 🚀 crecer tu negocio  🏪 [Papeleria 123]!<br>Con el Plan Nacional; Pideaky apoya crecimiento de pequeños negocios con préstamos desde 10,000 hasta 100,000 pesos.<br>Tu eliges el plazo desde 8 a 42 semanas.<br>No pedimos anticipos , pide una cita y un asesor te visitará para informarte.";
 
         $array_message = array("destination_phone"=>$destination_phone, 
                                 "message"=>$message, 
@@ -261,7 +259,7 @@ class Cliente {
             $save_lastmessage = $this->save_lastmessage($destination_phone, $source_phone, $messageinsert_id, "sent", $destination_phone, "file");
         }
     
-        return $response;
+        return json_encode($array_message);
     }
 
     public function save_templateFileSent($data) {
@@ -492,6 +490,57 @@ class Cliente {
             return json_encode(array("status" => "ok", "id" => $message_id));
         }
     }
+
+    // Guarda un batch de excel
+    public function save_batch($nombreOriginal, $nombreGuardado) {
+        
+        // Insertar en tabla batches
+        $stmt = $this->conn->prepare("INSERT INTO batches (`name`, `filename`) VALUES (?, ?)");
+        $stmt->bind_param("ss", $nombreOriginal, $nombreGuardado);
+        $res = $stmt->execute();
+        $batchId = $stmt->insert_id;
+
+        if (!$res) {
+            return json_encode(array("status" => "false", "msj" => $stmt->error));
+        } else {
+            return json_encode(array("status" => "ok", "id" => $batchId));
+        }
+
+    }
+
+    // Obtener la lista de batches con total de registros
+    public function obtenerBatches() {
+        $sql = "SELECT b.id, b.timestamp, b.name, b.filename, COUNT(c.id) as total_registros
+                FROM batches b
+                LEFT JOIN clientes c ON c.batch_id = b.id
+                GROUP BY b.id
+                ORDER BY b.timestamp DESC";
+
+        $result = $this->conn->query($sql);
+
+        $batches = [];
+        while ($row = $result->fetch_assoc()) {
+            $batches[] = $row;
+        }
+
+        return $batches;
+    }
+
+    
+    public function obtenerClientesPorBatch($batch_id) {
+        $stmt = $this->conn->prepare("SELECT nombre, telefono, email, web FROM clientes WHERE batch_id = ?");
+        $stmt->bind_param("i", $batch_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+    
+        $clientes = [];
+        while ($row = $result->fetch_assoc()) {
+            $clientes[] = $row;
+        }
+    
+        return $clientes;
+    }
+    
     
     
 }
