@@ -230,7 +230,7 @@ class Cliente {
     
         curl_close($ch);
         $json_res = json_decode($response);
-        $messageId = ( !empty($json_res->messageId) )?$json_res->messageId:"";
+        $messageId = ( !empty($json_res->messages[0]->id) )?$json_res->messages[0]->id:"";
 
         $filename = "wa3a.jpg";
         $user_id = "1";
