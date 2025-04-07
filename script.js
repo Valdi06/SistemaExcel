@@ -49,7 +49,7 @@ function actualizarListas(response) {
         let mensajeFecha = item.mensaje_fecha ? item.mensaje_fecha : "";
         let estadoIcono = obtenerIconoMensaje(item);
 
-        console.log(item);
+        // console.log(item);
         // Validar si está dentro de los últimos 30 días
         let esReciente = false;
         if (item.lasttimestamp) {

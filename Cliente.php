@@ -154,7 +154,7 @@ class Cliente {
         }
     }
        
-    public function enviar_plantilla($destination_phone, $source_phone){
+    public function enviar_plantilla($destination_phone, $source_phone, $nombre){
 
         $destination_phone = ( strpos($destination_phone, '521') !== false) ? $destination_phone : "521".$destination_phone;
 
@@ -185,7 +185,7 @@ class Cliente {
                         "parameters" => [
                             [
                                 "type" => "text",
-                                "text" => "Papeleria 123"
+                                "text" => $nombre
                             ]
                         ]
                     ],
@@ -217,7 +217,7 @@ class Cliente {
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     
         // Envio de mensaje
-        // $response = curl_exec($ch);
+        $response = curl_exec($ch);
         
         // if (curl_errno($ch)) {
         //     echo 'Curl error: ' . curl_error($ch);
