@@ -268,7 +268,7 @@ class Cliente {
         $this->conn->query("SET NAMES utf8mb4;");
     
         $query = "INSERT INTO customerfiles(
-            filename, file_url, file_type, fileorigin, id_wa, caption, phone_wa, source_phone, user_id, user_name
+            filename, file_url, file_type, fileorigin, gsid, caption, phone_wa, source_phone, user_id, user_name
         ) VALUES (?, ?, ?, 'sent', ?, ?, ?, ?, ?, ?)";
     
         $stmt = $this->conn->prepare($query);

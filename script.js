@@ -74,6 +74,8 @@ function actualizarListas(response) {
                             <small><em>${item.address}</em></small>
                             <br>
                             <small><em>${mensaje}</em></small>
+                            <br>
+                            <small id="small_${item.id}"></small>
                         </div>
                     </div>
                     <div class="text-end">
@@ -116,6 +118,9 @@ function obtenerIconoMensaje(item) {
 
 // Función genérica para mostrar seleccionados de una lista
 function send_template(listaId) {
+
+    $("#btnTodosAccion, #btnFinalizadoAccion, #btnNoEnviadosAccion").attr('disabled','disabled');
+
     $(`#${listaId} input[type="checkbox"]:checked`).each(function () {
         let telefono = $(this).val();
         let nombre = $(this).data("nombre");
@@ -136,9 +141,10 @@ function send_template(listaId) {
                 'source_phone':source_phone,
                 'clienteid':clienteid
             },
-            success: function(response){
+            success: function(res){
 
-                console.log(response);
+                console.log(res);
+                $("#small_"+clienteid).html("Envio ID: " + res.messageId);
                 
             },
             error: function(xhr, status, error){
