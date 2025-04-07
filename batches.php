@@ -10,6 +10,8 @@ $batches = $cliente->obtenerBatches(); // Asegúrate de tener esta función en C
     <meta charset="UTF-8">
     <title>Batches Subidos</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <link rel="stylesheet" href="styles.css">
     <style>
         #batchList {
             max-height: 300px;
@@ -31,45 +33,14 @@ $batches = $cliente->obtenerBatches(); // Asegúrate de tener esta función en C
 
         <div id="batchDetalles" class="mt-4">
             <h4>📋 Detalles del Batch</h4>
-            <ul id="detalleLista" class="list-group"></ul>
+            <ul id="todosList" class="list-group"></ul>
         </div>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <script src="script.js"></script>
     <script>
-        $(document).ready(function () {
-            $(".batch-item").on("click", function () {
-                const batchId = $(this).data("id");
-                console.log("🧾 Cargando batch ID:", batchId);
-
-                $.ajax({
-                    url: "cargar_batch.php",
-                    type: "POST",
-                    data: { batch_id: batchId },
-                    success: function (response) {
-                        const data = JSON.parse(response);
-                        $("#detalleLista").empty();
-
-                        if (data.length === 0) {
-                            $("#detalleLista").append(`<li class="list-group-item">Sin registros para este batch.</li>`);
-                            return;
-                        }
-
-                        data.forEach(item => {
-                            $("#detalleLista").append(`
-                                <li class="list-group-item">
-                                    <strong>${item.nombre}</strong> - ${item.telefono} <br>
-                                    📧 ${item.email} | 🌐 ${item.web}
-                                </li>
-                            `);
-                        });
-                    },
-                    error: function (xhr, status, error) {
-                        console.error("❌ Error al cargar el batch:", error);
-                    }
-                });
-            });
-        });
+        
     </script>
 </body>
 </html>

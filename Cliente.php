@@ -603,8 +603,19 @@ class Cliente {
         return $clientes;
     }
     
+    public function obtenerBatchesPorFecha($fecha) {
+        $stmt = $this->conn->prepare("SELECT id, `timestamp`, `name`, `filename` FROM batches WHERE DATE(timestamp) = ?");
+        $stmt->bind_param("s", $fecha);
+        $stmt->execute();
+        $result = $stmt->get_result();
     
-    
+        $batches = [];
+        while ($row = $result->fetch_assoc()) {
+            $batches[] = $row;
+        }
+        return $batches;
+    }
+        
 }
 ?>
 

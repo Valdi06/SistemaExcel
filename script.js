@@ -25,13 +25,18 @@ $(document).ready(function () {
             }
         });
     });
+
+    const hoy = new Date().toISOString().split("T")[0];
+    $("#fechaFiltro").val(hoy).trigger("change");
+    
 });
 
 // Función para cargar los datos al inicio
-function cargarDatos() {
+function cargarDatos(batch_id) {
     $.ajax({
         url: "cargar_datos.php",
-        type: "GET",
+        type: "POST",
+        data: {'batch_id':batch_id},
         success: function (response) {
             actualizarListas(response);
         }
@@ -70,9 +75,7 @@ function actualizarListas(response) {
                     <div class="d-flex align-items-start gap-2">
                         <input class="form-check-input mt-1" type="checkbox" id="chk_${item.id}" value="${item.telefono}" data-clienteid="${item.id}" data-nombre="${item.nombre}" ${checked}>
                         <div>
-                            <strong>${item.nombre} (${item.telefono})</strong>
-                            <br>
-                            <small><em>${item.address}</em></small>
+                            <strong>${item.nombre} (${item.telefono})</strong> <small><em>(${item.address})</em></small>
                             <br>
                             <small><em>${mensaje}</em></small>
                             <br>
@@ -173,22 +176,11 @@ $("#btnNoEnviadosAccion").click(() => {
     send_template("noEnviadoList");
 });
 
-$(document).on('click', '.batch-item', function () {
+$(".batch-item").on("click", function () {
     let batchId = $(this).data('id');
     console.log(`🔍 Cargando registros del batch ID: ${batchId}`);
 
-    $.ajax({
-        url: 'get_batch_details.php',
-        type: 'POST',
-        dataType: 'json',
-        data: { batch_id: batchId },
-        success: function (data) {
-            mostrarRegistrosDelBatch(data);
-        },
-        error: function (xhr) {
-            console.error("❌ Error al cargar los registros del batch:", xhr.responseText);
-        }
-    });
+    cargarDatos(batchId);
 });
 
 function mostrarRegistrosDelBatch(registros) {
@@ -212,3 +204,27 @@ function mostrarRegistrosDelBatch(registros) {
         `);
     });
 }
+
+$("#fechaFiltro").on("change", function () {
+    const fecha = $(this).val();
+    if (fecha) {
+        $.post("obtener_batches_fecha.php", { fecha: fecha }, function (response) {
+            let data = JSON.parse(response);
+            let options = `<option value="">-- Selecciona un batch --</option>`;
+            data.forEach(batch => {
+                options += `<option value="${batch.id}">${batch.timestamp} - ${batch.name}</option>`;
+            });
+            $("#batchSelect").html(options);
+        });
+    }
+});
+
+// Al seleccionar un batch, obtener los registros de ese batch_id
+$("#batchSelect").on("change", function () {
+    const batch_id = $(this).val();
+    if (batch_id) {
+        cargarDatos(batch_id);
+    } else {
+        $("#resultadosBatch").html("");
+    }
+});

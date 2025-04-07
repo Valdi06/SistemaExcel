@@ -14,6 +14,23 @@
     
     <form id="uploadForm" enctype="multipart/form-data">
 
+        <div class="container mt-4">
+            <div class="row mb-3">
+                <div class="col-md-4">
+                    <label for="fechaFiltro">Selecciona una fecha:</label>
+                    <input type="date" id="fechaFiltro" class="form-control">
+                </div>
+                <div class="col-md-6">
+                    <label for="batchSelect">Selecciona un batch:</label>
+                    <select id="batchSelect" class="form-select">
+                        <option value="">-- Selecciona un batch --</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="resultadosBatch"></div>
+        </div>
+
         <div class="row">
             <div class="col-4">
                 <div class="form-group">
