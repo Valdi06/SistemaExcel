@@ -1,6 +1,6 @@
 $(document).ready(function () {
     // Cargar datos al cargar la página
-    cargarDatos();
+    // cargarDatos();
 
     // Manejar la carga del archivo Excel
     $("#uploadForm").on("submit", function (e) {
@@ -51,6 +51,7 @@ function actualizarListas(response) {
 
         // console.log(item);
         // Validar si está dentro de los últimos 30 días
+        // let esReciente = (item.reciente == "reciente") ? true : false;
         let esReciente = false;
         if (item.lasttimestamp) {
             let fechaMensaje = new Date(item.lasttimestamp);
@@ -65,9 +66,9 @@ function actualizarListas(response) {
         let checked = esReciente ? "" : "checked";
 
         let listItem = `
-                <li class="list-group-item d-flex align-items-center justify-content-between ${fondoClase}">
+                <li id="li_${item.id}" class="list-group-item d-flex align-items-center justify-content-between ${fondoClase}">
                     <div class="d-flex align-items-start gap-2">
-                        <input class="form-check-input mt-1" type="checkbox" value="${item.telefono}" data-clienteid="${item.id}" data-nombre="${item.nombre}" ${checked}>
+                        <input class="form-check-input mt-1" type="checkbox" id="chk_${item.id}" value="${item.telefono}" data-clienteid="${item.id}" data-nombre="${item.nombre}" ${checked}>
                         <div>
                             <strong>${item.nombre} (${item.telefono})</strong>
                             <br>
@@ -145,7 +146,8 @@ function send_template(listaId) {
 
                 console.log(res);
                 $("#small_"+clienteid).html("Envio ID: " + res.messageId);
-                
+                $("#li_"+clienteid).addClass("bg-warning-subtle");
+                $("#chk_"+clienteid).prop('checked', false);
             },
             error: function(xhr, status, error){
                 console.error("Error en AJAX:", xhr.responseText || error);

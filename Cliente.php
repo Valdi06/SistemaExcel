@@ -127,7 +127,11 @@ class Cliente {
     
         $clientes = [];
         while ($row = $result->fetch_assoc()) {
+            $res_recientes = $this->buscar_recientes($row["telefono"], $row["id"]);
+            $json_recientes = json_decode($res_recientes);
             // Formatear la fecha del mensaje
+            $row['numRecientes'] = $json_recientes->num;
+            $row['reciente'] = $json_recientes->compararFecha;
             $row['lasttimestamp'] = $row['mensaje_fecha'];
             $row['mensaje_fecha'] = $this->formatearFecha($row['mensaje_fecha']);
             $clientes[] = $row;
@@ -136,6 +140,60 @@ class Cliente {
         return $clientes;
     }
     
+    public function buscar_recientes($telefono, $cliente_id){
+
+        $query = "SELECT
+                        id,
+                        `timestamp`,
+                        nombre,
+                        `address`,
+                        email,
+                        telefono,
+                        web,
+                        fecha_envio,
+                        response,
+                        source_phone,
+                        batch_id 
+                    FROM
+                        clientes 
+                    WHERE
+                        telefono = ? 
+                        AND id != ? 
+                    ORDER BY
+                        id DESC 
+                        LIMIT 1";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("si", $telefono, $cliente_id);
+        $resultado = $stmt->execute();
+        $result = $stmt->get_result();
+        $num = $result->num_rows;
+        $row = $result->fetch_array(MYSQLI_ASSOC);
+
+        $compararFecha = ($num != 0) ? $this->comparar_fecha($row["timestamp"]) : "";
+    
+        return json_encode(array(
+            "num" => $num,
+            "timestamp" => $row["timestamp"] ?? "",
+            "id" => $row["id"] ?? "",
+            "compararFecha"=>$compararFecha
+        ));
+
+    }
+
+    public function comparar_fecha($timestamp){
+
+        $fecha = new DateTime($timestamp);
+        $hoy = new DateTime();
+        $hace30dias = (clone $hoy)->modify('-30 days');
+
+        if ($fecha < $hace30dias) {
+            return "no reciente";
+        } else {
+            return "reciente";
+        }
+
+    }
     
     // Función para formatear la fecha del mensaje
     private function formatearFecha($timestamp) {
