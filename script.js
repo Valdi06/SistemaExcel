@@ -39,6 +39,7 @@ function cargarDatos(batch_id) {
         data: {'batch_id':batch_id},
         success: function (response) {
             actualizarListas(response);
+            cargarResumen(batch_id);
         }
     });
 }
@@ -93,7 +94,7 @@ function actualizarListas(response) {
                 </li>`;
 
         $("#todosList").append(listItem);
-        if (!esReciente) {
+        if (item.mensaje_estado != 'failed') {
             $("#finalizadoList").append(listItem);
         } else {
             $("#noEnviadoList").append(listItem);
@@ -106,18 +107,16 @@ function actualizarListas(response) {
 function obtenerIconoMensaje(item) {
     let icon = "";
 
-    if (item.origin === "sent") {
-        if (item.mensaje_estado == 'queued') {
-            icon = `<i class="fas fa-clock"></i>`; // Reloj (En cola)
-        } else if (item.mensaje_estado == 'failed') {
-            icon = `<i class="fas fa-times ctimes"></i>`; // Equís roja (Fallido)
-        } else if (item.mensaje_estado == 'sent') {
-            icon = `<i class="fas fa-check"></i>`; // Check negro (Enviado)
-        } else if (item.mensaje_estado == 'delivered') {
-            icon = `<i class="fas fa-check mcheck"></i><i class="fas fa-check"></i>`; // Doble check negro (Entregado)
-        } else if (item.mensaje_estado == 'seen') {
-            icon = `<i class="fas fa-check checkread mcheck"></i><i class="fas fa-check checkread"></i>`; // Doble check celeste (Visto)
-        }
+    if (item.mensaje_estado == 'queued') {
+        icon = `<i class="fas fa-clock"></i>`; // Reloj (En cola)
+    } else if (item.mensaje_estado == 'failed') {
+        icon = `<i class="fas fa-times ctimes"></i>`; // Equís roja (Fallido)
+    } else if (item.mensaje_estado == 'sent') {
+        icon = `<i class="fas fa-check"></i>`; // Check negro (Enviado)
+    } else if (item.mensaje_estado == 'delivered') {
+        icon = `<i class="fas fa-check mcheck"></i><i class="fas fa-check"></i>`; // Doble check negro (Entregado)
+    } else if (item.mensaje_estado == 'seen') {
+        icon = `<i class="fas fa-check checkread mcheck"></i><i class="fas fa-check checkread"></i>`; // Doble check celeste (Visto)
     }
 
     return `<span class="status-icon">${icon}</span>`;
@@ -228,7 +227,85 @@ $("#batchSelect").on("change", function () {
     const batch_id = $(this).val();
     if (batch_id) {
         cargarDatos(batch_id);
-    } else {
-        $("#resultadosBatch").html("");
-    }
+    } 
 });
+
+function cargarResumen(batch_id) {
+    $.ajax({
+        url: "obtener_resumen.php",
+        method: "POST",
+        data: { batch_id: batch_id },
+        dataType: "json",
+        success: function (data) {
+            console.log(data);
+            if (data) {
+                $("#resumen_solicitados").text(data.solicitados);
+                $("#resumen_rechazados").text(data.rechazados);
+                $("#resumen_enviados").text(data.enviados);
+                $("#resumen_entregados").text(data.entregados);
+                $("#resumen_leidos").text(data.leidos);
+                $("#resumen_respondidos").text(data.respondidos);
+
+                // (Opcional) Actualizar gráfica si tienes una
+                actualizarResumen(data);
+            }
+        },
+        error: function (xhr, status, error) {
+            console.error("Error al cargar resumen:", error);
+        }
+    });
+}
+
+let resumenChart; // Variable global para que podamos actualizarla
+
+function actualizarResumen(resumen) {
+    const {
+        solicitados = 0,
+        rechazados = 0,
+        enviados = 0,
+        entregados = 0,
+        leidos = 0,
+        respondidos = 0
+    } = resumen;
+
+    // Actualiza valores en la lista
+    $(".solicitados").css("background-color", "#007bff");
+    $(".rechazados").css("background-color", "#dc3545");
+    $(".enviados").css("background-color", "#17a2b8");
+    $(".entregados").css("background-color", "#28a745");
+    $(".leidos").css("background-color", "#ffc107");
+    $(".respondidos").css("background-color", "#6f42c1");
+
+    const labels = ["Solicitados", "Rechazados", "Enviados", "Entregados", "Leídos", "Respondidos"];
+    const data = [solicitados, rechazados, enviados, entregados, leidos, respondidos];
+    const colors = ["#007bff", "#dc3545", "#17a2b8", "#28a745", "#ffc107", "#6f42c1"];
+
+    const ctx = document.getElementById("resumenGrafica").getContext("2d");
+
+    if (resumenChart) {
+        resumenChart.data.datasets[0].data = data;
+        resumenChart.update();
+    } else {
+        resumenChart = new Chart(ctx, {
+            type: "pie",
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: "Resumen",
+                    data: data,
+                    backgroundColor: colors
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: { mode: "index", intersect: false }
+                },
+                scales: {
+                    y: { beginAtZero: true }
+                }
+            }
+        });
+    }
+}

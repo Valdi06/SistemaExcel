@@ -52,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 $email    = $rowData[3];
                 $web      = $rowData[4];
 
-                $telefono = ( strpos($telefono, '521') !== false) ? $telefono : "521".$telefono;
+                $telefono = (substr($telefono, 0, 3) === '521') ? $telefono : '521' . $telefono;
 
                 if (in_array($telefono, $telefonosProcesados) || $cliente->telefonoEnviadoHoy($telefono)) {
                     continue;

@@ -82,47 +82,40 @@ class Cliente {
                 c.fecha_envio,
                 c.response,
                 c.source_phone,
-                c.response,
                 c.batch_id,
                 p.origin,
-                COALESCE(
-                    (SELECT message_received FROM messageschb WHERE messageschb.id = p.message_id AND p.origin = 'received' AND p.message_type = 'text'),
-                    (SELECT message_sent FROM sent_messages WHERE sent_messages.id = p.message_id AND p.origin = 'sent' AND p.message_type = 'text'),
-                    (SELECT '📎 Archivo Adjunto' FROM customerfiles WHERE customerfiles.id = p.message_id AND p.message_type = 'file'),
-                    'Sin mensajes'
+                cf.id as customerfile_id,
+                COALESCE (
+                    ( SELECT message_received FROM messageschb WHERE messageschb.id = p.message_id AND p.origin = 'received' AND p.message_type = 'text' ),
+                    ( SELECT message_sent FROM sent_messages WHERE sent_messages.id = p.message_id AND p.origin = 'sent' AND p.message_type = 'text' ),
+                    ( SELECT '📎 Archivo Adjunto' FROM customerfiles WHERE customerfiles.id = p.message_id AND p.message_type = 'file' ),
+                    'Sin mensajes' 
                 ) AS ultimo_mensaje,
-                p.lasttimestamp AS mensaje_fecha,
-    
-                -- Determinar el estado del mensaje basado en las columnas
-                CASE
-                    WHEN p.origin = 'sent' AND p.message_type = 'text' THEN
-                        CASE
-                            WHEN sm.seen IS NOT NULL THEN 'seen'  -- Visto ✔✔🔵 (Prioridad más alta)
-                            WHEN sm.delivered IS NOT NULL THEN 'delivered'  -- Entregado ✔✔
-                            WHEN sm.sent IS NOT NULL THEN 'sent'  -- Enviado ✔
-                            WHEN sm.failed IS NOT NULL THEN 'failed'  -- Fallido ❌
-                            WHEN sm.queued IS NOT NULL THEN 'queued'  -- En cola ⏳ (Menor prioridad)
-                            ELSE NULL
-                        END
-                    WHEN p.origin = 'sent' AND p.message_type = 'file' THEN
-                        CASE
-                            WHEN cf.seen IS NOT NULL THEN 'seen' 
-                            WHEN cf.delivered IS NOT NULL THEN 'delivered' 
-                            WHEN cf.sent IS NOT NULL THEN 'sent' 
-                            WHEN cf.failed IS NOT NULL THEN 'failed' 
-                            WHEN cf.queued IS NOT NULL THEN 'queued' 
-                            ELSE NULL
-                        END
-                    ELSE NULL
-                END AS mensaje_estado
-    
-            FROM clientes c
-            LEFT JOIN phones p ON c.telefono = p.phone AND c.source_phone = p.source_phone
-            LEFT JOIN sent_messages sm ON sm.id = p.message_id AND p.origin = 'sent' AND p.message_type = 'text'
-            LEFT JOIN customerfiles cf ON cf.id = p.message_id AND p.origin = 'sent' AND p.message_type = 'file'
+                p.lasttimestamp AS mensaje_fecha,-- Determinar el estado del mensaje basado en las columnas
+            CASE
+                    WHEN cf.seen IS NOT NULL THEN
+                    'seen' 
+                    WHEN cf.delivered IS NOT NULL THEN
+                    'delivered' 
+                    WHEN cf.sent IS NOT NULL THEN
+                    'sent' 
+                    WHEN cf.failed IS NOT NULL THEN
+                    'failed' 
+                    WHEN cf.queued IS NOT NULL THEN
+                    'queued' ELSE NULL 
+                END AS mensaje_estado 
+            FROM
+                clientes c
+                LEFT JOIN phones p ON CONCAT( IF ( LEFT ( c.telefono, 3 ) = '521', '', '521' ), c.telefono ) = p.phone 
+                AND c.source_phone = p.source_phone
+                LEFT JOIN sent_messages sm ON sm.id = p.message_id 
+                AND p.origin = 'sent' 
+                AND p.message_type = 'text'
+                LEFT JOIN customerfiles cf ON cf.gsid = c.response 
             WHERE
-                c.batch_id = ?
-            ORDER BY p.lasttimestamp DESC
+                c.batch_id = ? 
+            ORDER BY
+                p.lasttimestamp DESC
         ";
     
         $stmt = $this->conn->prepare($query);
@@ -219,7 +212,7 @@ class Cliente {
        
     public function enviar_plantilla($destination_phone, $source_phone, $nombre, $clienteid){
 
-        $destination_phone = ( strpos($destination_phone, '521') !== false) ? $destination_phone : "521".$destination_phone;
+        $destination_phone = (substr($destination_phone, 0, 3) === '521') ? $destination_phone : '521' . $destination_phone;
 
         $payload = [
             "messaging_product" => "whatsapp",
@@ -638,6 +631,25 @@ class Cliente {
         }
         return $batches;
     }
+
+    public function obtenerResumenPorBatch($batch_id) {
+        $query = "SELECT
+                    COUNT(c.id) AS solicitados,
+                    SUM(CASE WHEN cf.failed IS NOT NULL THEN 1 ELSE 0 END) AS rechazados,
+                    SUM(CASE WHEN cf.sent IS NOT NULL THEN 1 ELSE 0 END) AS enviados,
+                    SUM(CASE WHEN cf.delivered IS NOT NULL THEN 1 ELSE 0 END) AS entregados,
+                    SUM(CASE WHEN cf.seen IS NOT NULL THEN 1 ELSE 0 END) AS leidos
+                  FROM clientes c
+                  LEFT JOIN customerfiles cf ON c.response = cf.gsid
+                  WHERE c.batch_id = ?";
+    
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("i", $batch_id);
+        $stmt->execute();
+        $result = $stmt->get_result();
+        return $result->fetch_assoc(); // Devuelve solo un objeto asociativo
+    }
+    
         
 }
 ?>
