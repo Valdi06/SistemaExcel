@@ -154,6 +154,7 @@ function send_template(listaId) {
                 $("#small_"+clienteid).html("Envio ID: " + res.messageId);
                 $("#li_"+clienteid).addClass("bg-warning-subtle");
                 $("#chk_"+clienteid).prop('checked', false);
+                $("#chk_"+clienteid).attr('disabled','disabled');
             },
             error: function(xhr, status, error){
                 console.error("Error en AJAX:", xhr.responseText || error);
