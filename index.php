@@ -13,7 +13,7 @@
 
     <div class="row">
 
-        <div class="col-8">
+        <div class="col-7">
 
             <div class="row">
                 <div class="col-6">
@@ -81,7 +81,7 @@
 
         </div>
 
-        <div class="col-4">
+        <div class="col-5">
             <!-- Resumen -->
              <div class="row">
                 <div class="col-6">
