@@ -52,6 +52,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
                 $email    = $rowData[3];
                 $web      = $rowData[4];
 
+                $telefono = ( strpos($telefono, '521') !== false) ? $telefono : "521".$telefono;
+
                 if (in_array($telefono, $telefonosProcesados) || $cliente->telefonoEnviadoHoy($telefono)) {
                     continue;
                 }
@@ -74,7 +76,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['excel_file'])) {
 
 // Guardar el log en un archivo
 if (!empty($telefonosProcesados)) {
-    $file = fopen("log_importacion.txt", "a"); // "a" para agregar sin sobrescribir
+    $file = fopen("./logs/log_importacion.txt", "a"); // "a" para agregar sin sobrescribir
     fwrite($file, $logData . "\n--------------------------------------\n");
     fclose($file);
 }

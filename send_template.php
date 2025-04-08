@@ -9,7 +9,7 @@ $clienteid = isset($_POST['clienteid']) ? $_POST['clienteid'] : '';
 
 $cliente = new Cliente();
 
-$res_template = $cliente->enviar_plantilla($telefono, $source_phone, $nombre);
+$res_template = $cliente->enviar_plantilla($telefono, $source_phone, $nombre, $clienteid);
 
 echo $res_template;
 

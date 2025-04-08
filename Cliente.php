@@ -82,6 +82,7 @@ class Cliente {
                 c.fecha_envio,
                 c.response,
                 c.source_phone,
+                c.response,
                 c.batch_id,
                 p.origin,
                 COALESCE(
@@ -216,7 +217,7 @@ class Cliente {
         }
     }
        
-    public function enviar_plantilla($destination_phone, $source_phone, $nombre){
+    public function enviar_plantilla($destination_phone, $source_phone, $nombre, $clienteid){
 
         $destination_phone = ( strpos($destination_phone, '521') !== false) ? $destination_phone : "521".$destination_phone;
 
@@ -319,9 +320,31 @@ class Cliente {
         if( !empty($messageinsert_id)){
             // save last message
             $save_lastmessage = $this->save_lastmessage($destination_phone, $source_phone, $messageinsert_id, "sent", $destination_phone, "file");
+            $update_sentMessage = $this->update_tblClientes($clienteid, $messageId);
         }
     
         return json_encode($array_message);
+    }
+
+    public function update_tblClientes($clienteid, $messageId){
+
+        $query = "UPDATE clientes SET fecha_envio = CURRENT_TIMESTAMP, response = ? WHERE id = ?";
+        $stmt = $this->conn->prepare($query);
+        $stmt->bind_param("si", $messageId, $clienteid);
+
+        $res = $stmt->execute();
+    
+        // Registro en archivo de log
+        if ($f = fopen($GLOBALS["baseurl"] . "update_tblClientes" . date('Ymd') . ".txt", "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " R=" . ($res ? 'true' : 'false') . ", E=" . $stmt->error . ", Q=" . $query . "\r\n");
+            fclose($f);
+        }
+
+        if (!$res) {
+            return json_encode(array("status" => "false", "msj" => $stmt->error));
+        } else {
+            return json_encode(array("status" => "ok", "id" => $message_id));
+        }
     }
 
     public function save_templateFileSent($data) {

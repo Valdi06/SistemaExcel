@@ -69,17 +69,20 @@ function actualizarListas(response) {
 
         let fondoClase = esReciente ? "bg-warning-subtle" : "";
         let checked = esReciente ? "" : "checked";
+        let txtEnvio = item.response ? "Envio ID: " + item.response : "";
+
+        let disablechk = item.fecha_envio ? "disabled" : "";
 
         let listItem = `
                 <li id="li_${item.id}" class="list-group-item d-flex align-items-center justify-content-between ${fondoClase}">
                     <div class="d-flex align-items-start gap-2">
-                        <input class="form-check-input mt-1" type="checkbox" id="chk_${item.id}" value="${item.telefono}" data-clienteid="${item.id}" data-nombre="${item.nombre}" ${checked}>
+                        <input class="form-check-input mt-1" type="checkbox" id="chk_${item.id}" value="${item.telefono}" data-clienteid="${item.id}" data-nombre="${item.nombre}" ${checked} ${disablechk}>
                         <div>
                             <strong>${item.nombre} (${item.telefono})</strong> <small><em>(${item.address})</em></small>
                             <br>
                             <small><em>${mensaje}</em></small>
                             <br>
-                            <small id="small_${item.id}"></small>
+                            <small id="small_${item.id}">${txtEnvio}</small>
                         </div>
                     </div>
                     <div class="text-end">
