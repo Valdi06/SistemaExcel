@@ -33,7 +33,9 @@ $batches = $cliente->obtenerBatches(); // Asegúrate de tener esta función en C
 
         <div id="batchDetalles" class="mt-4">
             <h4>📋 Detalles del Batch</h4>
-            <ul id="todosList" class="list-group"></ul>
+            <div class="lista-wrapper">
+                <ul id="todosList" class="list-group"></ul>
+            </div>
         </div>
     </div>
 

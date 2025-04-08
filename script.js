@@ -75,7 +75,7 @@ function actualizarListas(response) {
         let disablechk = item.fecha_envio ? "disabled" : "";
 
         let listItem = `
-                <li id="li_${item.id}" class="list-group-item d-flex align-items-center justify-content-between ${fondoClase}">
+                <li id="li_${item.id}" class="list-group-item d-flex align-items-center justify-content-between cliente-item ${fondoClase}" data-telefono="${item.telefono}" data-nombre="${item.nombre}">
                     <div class="d-flex align-items-start gap-2">
                         <input class="form-check-input mt-1" type="checkbox" id="chk_${item.id}" value="${item.telefono}" data-clienteid="${item.id}" data-nombre="${item.nombre}" ${checked} ${disablechk}>
                         <div>
@@ -308,4 +308,103 @@ function actualizarResumen(resumen) {
             }
         });
     }
+}
+
+let telefonoSeleccionado = "";
+let nombreSeleccionado = "";
+
+// Evento al hacer clic en un cliente
+$(document).on("click", ".cliente-item", function () {
+    telefonoSeleccionado = $(this).data("telefono");
+    nombreSeleccionado = $(this).data("nombre");
+
+    let source_phone = $("#source_phone").val();
+
+    $("#chatTelefono").text(`${nombreSeleccionado} (${telefonoSeleccionado})`);
+    $("#mensajeInput").val("");
+    $("#chatMensajes").html(""); // Limpia el historial por ahora
+
+    $("#chatModal").modal("show");
+    cargarConversacion(telefonoSeleccionado, source_phone);
+});
+
+// Evento al dar clic en el botón Enviar
+$("#btnEnviarMensaje").click(function () {
+    const mensaje = $("#mensajeInput").val().trim();
+    if (mensaje !== "") {
+        console.log(`Mensaje para ${telefonoSeleccionado}: ${mensaje}`);
+
+        // Agrega el mensaje en la vista del chat (lado derecho)
+        $("#chatMensajes").append(`<div class="mensaje-enviado">${mensaje}</div>`);
+        $("#mensajeInput").val("").focus();
+        scrollChatToBottom();
+    }
+});
+
+$("#mensajeInput").on("keypress", function (e) {
+    if (e.which === 13 && !e.shiftKey) { // Enter sin Shift
+        e.preventDefault(); // Evita salto de línea
+        $("#btnEnviarMensaje").click(); // Dispara el botón
+    }
+});
+
+function scrollChatToBottom() {
+    const contenedor = $("#chatMensajes");
+    contenedor.scrollTop(contenedor.prop("scrollHeight"));
+}
+
+function cargarConversacion(phone, source_phone) {
+    let dateSelect = $("#fechaFiltro").val();
+    const hoy = new Date(dateSelect).toISOString().split("T")[0];
+    const dateini = `${hoy} 00:00:00`;
+    const datefin = `${hoy} 23:59:59`;
+
+    $.ajax({
+        url: 'get_conversacion.php', // URL del archivo PHP
+        type: 'POST',
+        data: {
+            dateini: dateini,
+            datefin: datefin,
+            phone: phone,
+            source_phone: source_phone
+        },
+        success: function (data) {
+            const mensajes = JSON.parse(data);  // Parsear la respuesta JSON
+            const contenedor = $("#chatMensajes");
+            contenedor.empty();  // Limpiar el contenedor antes de agregar los nuevos mensajes
+
+            mensajes.forEach(msg => {
+                const lado = msg.tipo === "enviado" ? "text-end" : "text-start";
+                const clase = msg.tipo === "enviado" ? "mensaje-enviado" : "bg-light";
+                let contenido = "";
+
+                // Si el mensaje tiene archivo, procesarlo
+                if (msg.archivo) {
+                    const ext = msg.archivo.split('.').pop().toLowerCase();
+                    if (["jpg", "jpeg", "png", "gif"].includes(ext)) {
+                        contenido += `<img src="${msg.archivo}" class="img-thumbnail" style="max-width:250px;"><br>`;
+                    } else {
+                        contenido += `<a href="${msg.archivo}" target="_blank">📎 Ver archivo</a><br>`;
+                    }
+                }
+
+                contenido += msg.mensaje || "";  // Agregar el texto del mensaje
+
+                // Añadir el mensaje al contenedor
+                contenedor.append(`
+                    <div class="mb-2 ${lado}">
+                        <div class="p-2 rounded ${clase}" style="display: inline-block; max-width: 60%;">
+                            ${contenido}
+                        </div>
+                    </div>
+                `);
+            });
+
+            // Hacer scroll hacia el último mensaje
+            contenedor.scrollTop(contenedor[0].scrollHeight);
+        },
+        error: function(xhr, status, error) {
+            console.error("Error al obtener la conversación:", error);  // Manejo de errores
+        }
+    });
 }

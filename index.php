@@ -191,6 +191,32 @@
         </div>
     </div>
 
+    <!-- Modal Chat -->
+    <div class="modal fade" id="chatModal" tabindex="-1" aria-labelledby="chatModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-scrollable modal-xl">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Chat con <span id="chatTelefono"></span></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="chatMensajes" class="p-2" style="height: 800px; overflow-y: auto;">
+                    <!-- Mensajes aparecerán aquí -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <div class="input-group w-100">
+                        <input type="text" id="mensajeInput" class="form-control" placeholder="Escribe un mensaje...">
+                        <button class="btn btn-success" id="btnEnviarMensaje">
+                        <i class="fas fa-paper-plane"></i> Enviar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>

@@ -67,3 +67,29 @@ body {
     padding: 5px;
     background: #fff; /* Por si quieres un fondo fijo */
 }
+
+.mensaje-recibido {
+    background-color: #f1f0f0;
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    max-width: 70%;
+    align-self: flex-start;
+}
+
+.mensaje-enviado {
+    background-color: rgba(78, 172, 109, .23);
+    border-radius: 10px;
+    padding: 8px 12px;
+    margin-bottom: 10px;
+    max-width: 70%;
+    align-self: flex-end;
+    text-align: right;
+}
+
+#chatMensajes {
+    display: flex;
+    flex-direction: column;
+    background-image: url('dist/bg-pattern/pattern-05.png');
+    background-color: rgba(73, 80, 87, .1);
+}

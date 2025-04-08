@@ -48,7 +48,7 @@ class Cliente {
     }
 
     public function obtenerClientes($filtro = "todos") {
-        $query = "SELECT id, nombre, `address`, email, web, telefono, fecha_envio, response FROM clientes";
+        $query = "SELECT id, nombre, `address`, email, web, CONCAT( IF ( LEFT ( c.telefono, 3 ) = '521', '', '521' ), c.telefono ) as telefono, fecha_envio, response FROM clientes";
     
         if ($filtro === "enviados") {
             $query .= " WHERE response = 'Enviado'";
@@ -78,7 +78,7 @@ class Cliente {
                 c.address,
                 c.email,
                 c.web,
-                c.telefono,
+                CONCAT( IF ( LEFT ( c.telefono, 3 ) = '521', '', '521' ), c.telefono ) as telefono,
                 c.fecha_envio,
                 c.response,
                 c.source_phone,
@@ -606,7 +606,7 @@ class Cliente {
 
     
     public function obtenerClientesPorBatch($batch_id) {
-        $stmt = $this->conn->prepare("SELECT nombre, telefono, email, web FROM clientes WHERE batch_id = ?");
+        $stmt = $this->conn->prepare("SELECT nombre, CONCAT( IF ( LEFT ( c.telefono, 3 ) = '521', '', '521' ), c.telefono ) as telefono, email, web FROM clientes WHERE batch_id = ?");
         $stmt->bind_param("i", $batch_id);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -620,7 +620,7 @@ class Cliente {
     }
     
     public function obtenerBatchesPorFecha($fecha) {
-        $stmt = $this->conn->prepare("SELECT id, `timestamp`, `name`, `filename` FROM batches WHERE DATE(timestamp) = ?");
+        $stmt = $this->conn->prepare("SELECT id, `timestamp`, `name`, `filename` FROM `batches` WHERE DATE(timestamp) = ?");
         $stmt->bind_param("s", $fecha);
         $stmt->execute();
         $result = $stmt->get_result();
@@ -650,6 +650,74 @@ class Cliente {
         return $result->fetch_assoc(); // Devuelve solo un objeto asociativo
     }
     
+    public function obtenerConversacionCompleta($dateini, $datefin, $phone, $source_phone) {
+        // $c = new Conectar();
+        // $conn = $c->conexionCreditos();
+        $this->conn->query("SET NAMES utf8mb4;");
+        
+        $mensajes = [];
+        
+        // Mensajes recibidos
+        $queryRecibidos = "SELECT 
+                            `timestamp`,
+                            message_received AS mensaje,
+                            NULL AS archivo,
+                            'recibido' AS tipo
+                        FROM messageschb
+                        WHERE phone_wa = ? AND source_phone = ?
+                        AND (`timestamp` BETWEEN ? AND ?)";
+        $stmt1 = $this->conn->prepare($queryRecibidos);
+        $stmt1->bind_param("ssss", $phone, $source_phone, $dateini, $datefin);
+        $stmt1->execute();
+        $res1 = $stmt1->get_result();
+        while ($row = $res1->fetch_assoc()) {
+            $mensajes[] = $row;
+        }
+    
+        // Mensajes enviados
+        $queryEnviados = "SELECT 
+                            `timestamp`,
+                            message_sent AS mensaje,
+                            NULL AS archivo,
+                            'enviado' AS tipo
+                        FROM sent_messages
+                        WHERE phone = ? AND source_phone = ?
+                        AND (`timestamp` BETWEEN ? AND ?)";
+        $stmt2 = $this->conn->prepare($queryEnviados);
+        $stmt2->bind_param("ssss", $phone, $source_phone, $dateini, $datefin);
+        $stmt2->execute();
+        $res2 = $stmt2->get_result();
+        while ($row = $res2->fetch_assoc()) {
+            $mensajes[] = $row;
+        }
+    
+        // Archivos (imágenes/videos/etc)
+        $queryArchivos = "SELECT 
+                            `timestamp`,
+                            caption AS mensaje,
+                            file_url AS archivo,
+                            fileorigin AS tipo
+                        FROM customerfiles
+                        WHERE phone_wa = ? AND source_phone = ?
+                        AND (`timestamp` BETWEEN ? AND ?)";
+        $stmt3 = $this->conn->prepare($queryArchivos);
+        $stmt3->bind_param("ssss", $phone, $source_phone, $dateini, $datefin);
+        $stmt3->execute();
+        $res3 = $stmt3->get_result();
+        while ($row = $res3->fetch_assoc()) {
+            // 'fileorigin' tiene 'sent' o 'received'
+            $row['tipo'] = ($row['tipo'] === 'sent') ? 'enviado' : 'recibido';
+            $mensajes[] = $row;
+        }
+        
+        // Ordenar todos los mensajes por timestamp
+        usort($mensajes, function ($a, $b) {
+            return strtotime($a['timestamp']) - strtotime($b['timestamp']);
+        });
+        
+        return $mensajes;
+    }
+      
         
 }
 ?>
