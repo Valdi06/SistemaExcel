@@ -291,7 +291,7 @@ class Cliente {
         $filename = "wa3a.jpg";
         $user_id = "1";
         $user_name = "IA";
-        $message = "Hasta $100,000 para 🚀 crecer tu negocio  🏪 [Papeleria 123]!<br>Con el Plan Nacional; Pideaky apoya crecimiento de pequeños negocios con préstamos desde 10,000 hasta 100,000 pesos.<br>Tu eliges el plazo desde 8 a 42 semanas.<br>No pedimos anticipos , pide una cita y un asesor te visitará para informarte.";
+        $message = "Hasta $100,000 para 🚀 crecer tu negocio  🏪 ".$nombre."!<br>Con el Plan Nacional; Pideaky apoya crecimiento de pequeños negocios con préstamos desde 10,000 hasta 100,000 pesos.<br>Tu eliges el plazo desde 8 a 42 semanas.<br>No pedimos anticipos , pide una cita y un asesor te visitará para informarte.";
 
         $array_message = array("destination_phone"=>$destination_phone, 
                                 "message"=>$message, 
