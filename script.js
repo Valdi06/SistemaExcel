@@ -26,8 +26,12 @@ $(document).ready(function () {
         });
     });
 
-    const hoy = new Date().toISOString().split("T")[0];
-    $("#fechaFiltro").val(hoy).trigger("change");
+    const hoy = new Date();
+    const yyyy = hoy.getFullYear();
+    const mm = String(hoy.getMonth() + 1).padStart(2, '0'); // Mes comienza en 0
+    const dd = String(hoy.getDate()).padStart(2, '0');
+    const fechaHoy = `${yyyy}-${mm}-${dd}`;
+    $("#fechaFiltro").val(fechaHoy).trigger("change");
     
 });
 
@@ -75,10 +79,10 @@ function actualizarListas(response) {
         let disablechk = item.fecha_envio ? "disabled" : "";
 
         let listItem = `
-                <li id="li_${item.id}" class="list-group-item d-flex align-items-center justify-content-between cliente-item ${fondoClase}" data-telefono="${item.telefono}" data-nombre="${item.nombre}">
+                <li id="li_${item.id}" class="list-group-item d-flex align-items-center justify-content-between ${fondoClase}" data-telefono="${item.telefono}" data-nombre="${item.nombre}">
                     <div class="d-flex align-items-start gap-2">
                         <input class="form-check-input mt-1" type="checkbox" id="chk_${item.id}" value="${item.telefono}" data-clienteid="${item.id}" data-nombre="${item.nombre}" ${checked} ${disablechk}>
-                        <div>
+                        <div class="cliente-item" data-telefono="${item.telefono}" data-nombre="${item.nombre}">
                             <strong>${item.nombre} (${item.telefono})</strong> <small><em>(${item.address})</em></small>
                             <br>
                             <small><em>${mensaje}</em></small>
@@ -331,13 +335,49 @@ $(document).on("click", ".cliente-item", function () {
 // Evento al dar clic en el botón Enviar
 $("#btnEnviarMensaje").click(function () {
     const mensaje = $("#mensajeInput").val().trim();
-    if (mensaje !== "") {
-        console.log(`Mensaje para ${telefonoSeleccionado}: ${mensaje}`);
+    const source_phone = $("#source_phone").val();
 
-        // Agrega el mensaje en la vista del chat (lado derecho)
-        $("#chatMensajes").append(`<div class="mensaje-enviado">${mensaje}</div>`);
-        $("#mensajeInput").val("").focus();
-        scrollChatToBottom();
+    if (mensaje !== "") {
+
+        $.ajax({
+            url: "./send_messages.php",
+            type: "POST",
+            dataType: "json",
+            encode: true,
+            data: {
+                mensaje: mensaje,
+                telefonoSeleccionado: telefonoSeleccionado,
+                source_phone: source_phone,
+                nombreSeleccionado: nombreSeleccionado
+            },
+            headers: {
+                "accept": "application/json",
+                "Access-Control-Allow-Origin": "*"
+            },
+            success: function (res) {
+                console.log(res);
+
+                if(res.saveSendStatus == "Success"){
+                    // Agrega el mensaje enviado en el contenedor de chat (lado derecho)
+                    $("#chatMensajes").append(`
+                        <div class="mb-2 text-end">
+                            <div class="p-2 rounded mensaje-enviado" style="display: inline-block; max-width: 60%;">
+                                ${$('<div>').text(mensaje).html()}
+                            </div>
+                        </div>
+                    `);
+    
+                    $("#mensajeInput").val("").focus();
+                    scrollChatToBottom();
+                }
+
+            },
+            error: function (xhr, status) {
+                alert("Error de ajax");
+                console.log(xhr);
+                console.log(status);
+            }
+        });
     }
 });
 

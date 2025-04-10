@@ -111,7 +111,7 @@ class Cliente {
                 LEFT JOIN sent_messages sm ON sm.id = p.message_id 
                 AND p.origin = 'sent' 
                 AND p.message_type = 'text'
-                LEFT JOIN customerfiles cf ON cf.gsid = c.response 
+                LEFT JOIN customerfiles cf ON cf.gsid = c.response AND c.response != '' AND c.response IS NOT NULL 
             WHERE
                 c.batch_id = ? 
             ORDER BY
@@ -638,9 +638,10 @@ class Cliente {
                     SUM(CASE WHEN cf.failed IS NOT NULL THEN 1 ELSE 0 END) AS rechazados,
                     SUM(CASE WHEN cf.sent IS NOT NULL THEN 1 ELSE 0 END) AS enviados,
                     SUM(CASE WHEN cf.delivered IS NOT NULL THEN 1 ELSE 0 END) AS entregados,
-                    SUM(CASE WHEN cf.seen IS NOT NULL THEN 1 ELSE 0 END) AS leidos
+                    SUM(CASE WHEN cf.seen IS NOT NULL THEN 1 ELSE 0 END) AS leidos,
+                    SUM( CASE WHEN c.responsemessage_id IS NOT NULL THEN 1 ELSE 0 END ) AS respondidos
                   FROM clientes c
-                  LEFT JOIN customerfiles cf ON c.response = cf.gsid
+                  LEFT JOIN customerfiles cf ON cf.gsid = c.response AND c.response != '' AND c.response IS NOT NULL
                   WHERE c.batch_id = ?";
     
         $stmt = $this->conn->prepare($query);
@@ -651,8 +652,7 @@ class Cliente {
     }
     
     public function obtenerConversacionCompleta($dateini, $datefin, $phone, $source_phone) {
-        // $c = new Conectar();
-        // $conn = $c->conexionCreditos();
+        
         $this->conn->query("SET NAMES utf8mb4;");
         
         $mensajes = [];
@@ -718,6 +718,81 @@ class Cliente {
         return $mensajes;
     }
       
+    public function API_send_message($source_phone, $destination_phone, $message){
+
+        // Prepara curl para el envio por API
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+        CURLOPT_URL => 'https://api.gupshup.io/wa/api/v1/msg',
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_ENCODING => '',
+        CURLOPT_MAXREDIRS => 10,
+        CURLOPT_TIMEOUT => 0,
+        CURLOPT_FOLLOWLOCATION => true,
+        CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+        CURLOPT_CUSTOMREQUEST => 'POST',
+        CURLOPT_POSTFIELDS => 'channel=whatsapp&source=521'.$source_phone.'&destination='.$destination_phone.'&src.name=ProdPideAky&message=%7B%22type%22%3A%22text%22%2C%22text%22%3A%22'.$message.'%22%7D',
+        CURLOPT_HTTPHEADER => array(
+            'apikey: gsrppbbcyds5luwtbpcdyrwkonoc8bex',
+            'Content-Type: application/x-www-form-urlencoded',
+            'Accept: application/json'
+        ),
+        ));
+
+        $response = curl_exec($curl);
+
+        curl_close($curl);
+
+        // Guarda log de respuesta
+        if ($f=fopen($GLOBALS["baseurl"]."API_send_message" . date('Ymd') . ".txt", "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " M=" . $message . ", source_phone=" . $source_phone . ", destination_phone=" . $destination_phone . ", R=" . $response . "\r\n");
+            fclose($f);
+        }
+
+        return $response;
+
+    }
+
+    public function save_messagesent($message, $telefono, $source_phone, $response_message, $user_id, $user_name, $gsid) {
+        
+        $this->conn->query("SET NAMES utf8mb4;");
+    
+        $query = "INSERT INTO sent_messages (message_sent, phone, source_phone, response, user_id, user_name, gsid)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)";
+    
+        $stmt = $this->conn->prepare($query);
+        
+        $stmt->bind_param("ssssiss", $message, $telefono, $source_phone, $response_message, $user_id, $user_name, $gsid);
+        $res = $stmt->execute();
+
+        $messageinsert_id = $this->conn->insert_id;
+
+        if( !empty($messageinsert_id)){
+            // save last message
+            $save_lastmessage = $this->save_lastmessage($telefono, $source_phone, $messageinsert_id, "sent", $telefono, "text");
+        }
+    
+        // Logging
+        $logFile = $GLOBALS["baseurl"] . "save_messagesent" . date('Ymd') . ".txt";
+        if ($f = fopen($logFile, "a")) {
+            fwrite($f, date('Y-m-d H:i:s') . " R=" . ($res ? "1" : "0") . ", E=" . $stmt->error . ", Q=" . $query . "\r\n");
+            fclose($f);
+        }
+    
+        if (!$res) {
+            return json_encode(array(
+                "status" => "false",
+                "msj" => $stmt->error
+            ));
+        } else {
+            return json_encode(array(
+                "status" => "ok",
+                "id" => $this->conn->insert_id
+            ));
+        }
+    }
+    
         
 }
 ?>
