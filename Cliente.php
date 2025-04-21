@@ -639,7 +639,7 @@ class Cliente {
                     SUM(CASE WHEN cf.sent IS NOT NULL THEN 1 ELSE 0 END) AS enviados,
                     SUM(CASE WHEN cf.delivered IS NOT NULL THEN 1 ELSE 0 END) AS entregados,
                     SUM(CASE WHEN cf.seen IS NOT NULL THEN 1 ELSE 0 END) AS leidos,
-                    SUM( CASE WHEN c.responsemessage_id IS NOT NULL THEN 1 ELSE 0 END ) AS respondidos
+                    SUM( CASE WHEN c.replymessage_id IS NOT NULL THEN 1 ELSE 0 END ) AS respondidos
                   FROM clientes c
                   LEFT JOIN customerfiles cf ON cf.gsid = c.response AND c.response != '' AND c.response IS NOT NULL
                   WHERE c.batch_id = ?";
