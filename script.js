@@ -36,12 +36,14 @@ $(document).ready(function () {
 });
 
 // Función para cargar los datos al inicio
-function cargarDatos(batch_id) {
+function cargarDatos(batch_id, filtro) {
+    $("#tablaResumen").attr("data-batch_id", batch_id);
     $.ajax({
         url: "cargar_datos.php",
         type: "POST",
-        data: {'batch_id':batch_id},
+        data: {'batch_id':batch_id, 'filtro':filtro},
         success: function (response) {
+            console.log(response);
             actualizarListas(response);
             cargarResumen(batch_id);
         }
@@ -187,7 +189,7 @@ $(".batch-item").on("click", function () {
     let batchId = $(this).data('id');
     console.log(`🔍 Cargando registros del batch ID: ${batchId}`);
 
-    cargarDatos(batchId);
+    cargarDatos(batchId, 'todos');
 });
 
 function mostrarRegistrosDelBatch(registros) {
@@ -230,7 +232,7 @@ $("#fechaFiltro").on("change", function () {
 $("#batchSelect").on("change", function () {
     const batch_id = $(this).val();
     if (batch_id) {
-        cargarDatos(batch_id);
+        cargarDatos(batch_id, 'todos');
     } 
 });
 
@@ -391,6 +393,7 @@ $("#mensajeInput").on("keypress", function (e) {
 function scrollChatToBottom() {
     const contenedor = $("#chatMensajes");
     contenedor.scrollTop(contenedor.prop("scrollHeight"));
+    // console.log("scroll");
 }
 
 function cargarConversacion(phone, source_phone) {
@@ -441,10 +444,21 @@ function cargarConversacion(phone, source_phone) {
             });
 
             // Hacer scroll hacia el último mensaje
-            contenedor.scrollTop(contenedor[0].scrollHeight);
+            // contenedor.scrollTop(contenedor[0].scrollHeight);
+            scrollChatToBottom();
         },
         error: function(xhr, status, error) {
             console.error("Error al obtener la conversación:", error);  // Manejo de errores
         }
     });
 }
+
+$("#tablaResumen").on("click", "tr", function () {
+    const filtro = $(this).data("filtro");
+    let batch_id = $("#tablaResumen").data("batch_id");
+
+    console.log("Filtro aplicado:", filtro);
+    console.log("batch_id:", batch_id);
+
+    cargarDatos(batch_id, filtro);
+});

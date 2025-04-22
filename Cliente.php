@@ -70,7 +70,21 @@ class Cliente {
         return $clientes;
     }
 
-    public function obtenerClientesConMensajes($batch_id) {
+    public function obtenerClientesConMensajes($batch_id, $estado = null) {
+
+        $whereEstado = "";
+        if ($estado === "failed") {
+            $whereEstado = " AND cf.failed IS NOT NULL ";
+        } elseif ($estado === "sent") {
+            $whereEstado = " AND cf.sent IS NOT NULL ";
+        } elseif ($estado === "delivered") {
+            $whereEstado = " AND cf.delivered IS NOT NULL ";
+        } elseif ($estado === "seen") {
+            $whereEstado = " AND cf.seen IS NOT NULL ";
+        } elseif ($estado === "reply") {
+            $whereEstado = " AND c.replymessage_id IS NOT NULL AND c.replymessage_id != '' AND c.replymessage_id != 0";
+        }
+
         $query = "
             SELECT
                 c.id,
@@ -113,7 +127,7 @@ class Cliente {
                 AND p.message_type = 'text'
                 LEFT JOIN customerfiles cf ON cf.gsid = c.response AND c.response != '' AND c.response IS NOT NULL 
             WHERE
-                c.batch_id = ? 
+                c.batch_id = ? $whereEstado 
             ORDER BY
                 p.lasttimestamp DESC
         ";
@@ -639,7 +653,7 @@ class Cliente {
                     SUM(CASE WHEN cf.sent IS NOT NULL THEN 1 ELSE 0 END) AS enviados,
                     SUM(CASE WHEN cf.delivered IS NOT NULL THEN 1 ELSE 0 END) AS entregados,
                     SUM(CASE WHEN cf.seen IS NOT NULL THEN 1 ELSE 0 END) AS leidos,
-                    SUM( CASE WHEN c.replymessage_id IS NOT NULL THEN 1 ELSE 0 END ) AS respondidos
+                    SUM( CASE WHEN c.replymessage_id IS NOT NULL AND c.replymessage_id != '' AND c.replymessage_id != 0 THEN 1 ELSE 0 END ) AS respondidos
                   FROM clientes c
                   LEFT JOIN customerfiles cf ON cf.gsid = c.response AND c.response != '' AND c.response IS NOT NULL
                   WHERE c.batch_id = ?";

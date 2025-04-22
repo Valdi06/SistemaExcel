@@ -88,43 +88,35 @@
                     <!-- Gráfica -->
                     <div class="card-body">
                         <h5 class="card-title">Resumen de Envíos</h5>
-                        <!-- <ul class="list-group mb-3" id="resumenLista">
-                            <li class="list-group-item d-flex justify-content-between"><span>📨 Solicitados</span> <span id="resSolicitados">0</span></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>❌ Rechazados</span> <span id="resRechazados">0</span></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>📤 Enviados</span> <span id="resEnviados">0</span></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>📬 Entregados</span> <span id="resEntregados">0</span></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>👁️ Leídos</span> <span id="resLeidos">0</span></li>
-                            <li class="list-group-item d-flex justify-content-between"><span>💬 Respondidos</span> <span id="resRespondidos">0</span></li>
-                        </ul> -->
                         <canvas id="resumenGrafica" height="250"></canvas>
                     </div>
 
                 </div>
                 <div class="col-6">
                     <h4>Resumen</h4>
-                    <table class="table table-bordered">
+                    <table class="table table-bordered" id="tablaResumen">
                         <tbody>
-                            <tr>
+                            <tr data-nombre="Solicitados" data-filtro="todos">
                                 <th class="solicitados" >Solicitados</th>
                                 <td class="solicitados"  id="resumen_solicitados"></td>
                             </tr>
-                            <tr>
+                            <tr data-nombre="Rechazados" data-filtro="failed">
                                 <th class="rechazados" >Rechazados</th>
                                 <td class="rechazados"  id="resumen_rechazados"></td>
                             </tr>
-                            <tr>
+                            <tr data-nombre="Enviados" data-filtro="sent">
                                 <th class="enviados" >Enviados</th>
                                 <td class="enviados"  id="resumen_enviados"></td>
                             </tr>
-                            <tr>
+                            <tr data-nombre="Entregados" data-filtro="delivered">
                                 <th class="entregados" >Entregados</th>
                                 <td class="entregados"  id="resumen_entregados"></td>
                             </tr>
-                            <tr>
+                            <tr data-nombre="Leídos" data-filtro="seen">
                                 <th class="leidos" >Leídos</th>
                                 <td class="leidos"  id="resumen_leidos"></td>
                             </tr>
-                            <tr>
+                            <tr data-nombre="Respondidos" data-filtro="reply">
                                 <th class="respondidos" >Respondidos</th>
                                 <td class="respondidos"  id="resumen_respondidos"></td>
                             </tr>
